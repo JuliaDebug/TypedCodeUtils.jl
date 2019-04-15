@@ -72,6 +72,7 @@ function lookthrough(f, c)
         end
         return f(c)
     end
+    return false
 end
 
 ##

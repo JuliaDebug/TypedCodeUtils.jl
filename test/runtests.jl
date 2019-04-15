@@ -37,3 +37,16 @@ ref = reflect(f, Tuple{Int, Int}, params=params)
 calls = cthulhu(ref)
 nextrefs = collect(reflect(c) for c in calls if TypedCodeUtils.canreflect(c))
 
+function h(x)
+    if x >= 2
+        return x ^ 2
+    else
+        return x + 2
+    end
+end
+
+params = TypedCodeUtils.current_params()
+ref = reflect(h, Tuple{Int}, params=params)
+calls = cthulhu(ref)
+nextrefs = collect(reflect(c) for c in calls if TypedCodeUtils.canreflect(c))
+
