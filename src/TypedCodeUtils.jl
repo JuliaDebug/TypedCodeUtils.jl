@@ -52,6 +52,7 @@ canreflect(c::Callsite) = canreflect(c.callinfo)
 reflect(c::Callsite; optimize=true, params=current_params()) = reflect(c.callinfo, optimize=optimize, params=params)
 
 include("process.jl")
+include("preprocess.jl")
 
 ##
 # Utils
