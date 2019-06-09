@@ -74,17 +74,20 @@ function process_call(::Consumer, ref::Reflection, id, c)
 end
 
 function callinfo(sig, rt, ref)
-    methds = Base._methods_by_ftype(sig, 1, ref.world)
+    methds = Base._methods_by_ftype(sig, -1, ref.world)
     (methds === false || length(methds) < 1) && return FailedCallInfo(sig, rt)
     callinfos = CallInfo[]
     for x in methds
-        meth = x[3]
         atypes = x[1]
         sparams = x[2]
+        meth = x[3]
         if isdefined(meth, :generator) && !Base.may_invoke_generator(meth, atypes, sparams)
             push!(callinfos, GeneratedCallInfo(sig, rt))
         else
-            mi = code_for_method(meth, atypes, sparams, params.world)
+            mi = code_for_method(meth, atypes, sparams, ref.world)
+            if mi === nothing
+                push!(callinfos, FailedCallInfo(sig, rt)) 
+            end
             push!(callinfos, MICallInfo(mi, rt)) 
         end
     end

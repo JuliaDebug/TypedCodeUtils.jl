@@ -8,6 +8,12 @@ else
     sptypes_from_meth_instance(mi) = Core.Compiler.spvals_from_meth_instance(mi)
 end
 
+if VERSION >= v"1.2.0-DEV.320"
+    const may_invoke_generator = Base.may_invoke_generator
+else
+    may_invoke_generator(meth, @nospecialize(atypes), sparams) = isdispatchtuple(atypes)
+end
+
 if VERSION < v"1.2.0-DEV.573"
     code_for_method(method, metharg, methsp, world, force=false) = Core.Compiler.code_for_method(method, metharg, methsp, world, force)
 else
@@ -40,15 +46,21 @@ function reflect(F, TT; optimize=true, params=current_params())
     reflect(sig; optimize=true, params=params)
 end
 
+# TODO: deduplicate with callinfo(sig, rt, ref)
 function reflect(sig; optimize=true, params=current_params())
     methds = Base._methods_by_ftype(sig, 1, params.world)
     (methds === false || length(methds) < 1) && return nothing
     x = methds[1]
+    atypes = x[1]
+    sparams = x[2]
     meth = x[3]
-    if isdefined(meth, :generator) && !isdispatchtuple(Tuple{sig.parameters[2:end]...})
+    if isdefined(meth, :generator) && !may_invoke_generator(meth, atypes, sparams)
         return nothing
     end
     mi = code_for_method(meth, sig, x[2], params.world)
+    if mi === nothing
+        return nothing
+    end
     reflect(mi, optimize=optimize, params=params)
 end
 
