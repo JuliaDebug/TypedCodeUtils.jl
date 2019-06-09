@@ -24,10 +24,9 @@ function cthulhu(ref::Reflection)
 
     invokes = map((arg) -> process_invoke(DefaultConsumer(), ref, arg...), invokes)
     calls   = map((arg) -> process_call(  DefaultConsumer(), ref, arg...), calls)
-    
+
     callsites = append!(invokes, calls)
-    @show callsites
-    sort!(callsites, by=(c)->c.id)
+    sort!(callsites, by=(c)->first(c))
     return callsites
 end
 
@@ -47,7 +46,7 @@ end
 params = TypedCodeUtils.current_params()
 ref = reflect(h, Tuple{Int}, params=params)
 calls = cthulhu(ref)
-nextrefs = collect(reflect(c) for c in calls if TypedCodeUtils.canreflect(c))
+nextrefs = collect(reflect(c) for (id, c) in calls if TypedCodeUtils.canreflect(c))
 
 if VERSION >= v"1.1.0-DEV.215" && Base.JLOptions().check_bounds == 0 
 Base.@propagate_inbounds function f(x)

@@ -63,9 +63,9 @@ function process_call(::Consumer, ref::Reflection, id, c)
                 
     # Filter out builtin functions and intrinsic function
     if sig[1] <: Core.Builtin || sig[1] <: Core.IntrinsicFunction
-        return Callsite(id, BuiltinCallInfo(sig, rt))
+        return id, BuiltinCallInfo(sig, rt)
     end
-    return Callsite(id, callinfo(sig, rt, ref))
+    return id, callinfo(sig, rt, ref)
 end
 
 function callinfo(sig, rt, ref)
