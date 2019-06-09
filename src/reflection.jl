@@ -41,7 +41,7 @@ else
     current_params() = Core.Compiler.Params(ccall(:jl_get_world_counter, UInt, ()))
 end
 
-function reflect(F, TT; optimize=true, params=current_params())
+function reflect(F, TT; optimize=true, params=current_params(), kwargs...)
     sig = Tuple{typeof(F), TT.parameters...}
     reflect(sig; optimize=true, params=params)
 end
