@@ -3,6 +3,7 @@ module TypedCodeUtils
 using Base.Meta
 import Core: Compiler
 using .Compiler: widenconst, argextype
+using Core: MethodInstance
 
 """
     Consumer

@@ -1,12 +1,15 @@
 canreflect(::CallInfo) = false
+isambiguous(::CallInfo) = false
 reflect(::CallInfo; optimize=true, params=current_params()) = nothing
 
+# Call could be resolved to a singular MI
 struct MICallInfo <: CallInfo
-    mi
+    mi::MethodInstance
     rt
 end
 canreflect(::MICallInfo) = true
-reflect(mi::MICallInfo; optimize=true, params=current_params()) = reflect(mi.mi, optimize=optimize, params=params)
+reflect(mi::MICallInfo; optimize=true, params=current_params()) =
+    reflect(mi.mi, optimize=optimize, params=params)
 
 struct BuiltinCallInfo <: CallInfo
     types
@@ -18,6 +21,8 @@ struct MultiCallInfo <: CallInfo
     rt
     callinfos::Vector{CallInfo}
 end
+isambiguous(::MultiCallInfo) = true
+Base.collect(mci::MultiCallInfo) = mci.callinfos
 
 struct GeneratedCallInfo <: CallInfo
     sig
