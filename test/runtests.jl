@@ -18,16 +18,15 @@ f(x, y) = x + y
 
 # Cthulhu's inner loop
 function cthulhu(ref::Reflection)
-    callsites = Callsite[]
 
-    invokes      = filter((c)->lookthrough(identify_invoke,      c), ref.CI.code)
-    calls        = filter((c)->lookthrough(identify_call,        c), ref.CI.code)
+    invokes = filter((c)->lookthrough(identify_invoke,      c), ref.CI.code)
+    calls   = filter((c)->lookthrough(identify_call,        c), ref.CI.code)
 
     invokes = map((arg) -> process_invoke(DefaultConsumer(), ref, arg...), invokes)
-    append!(callsites, invokes)
-    calls = map((arg) -> process_call(DefaultConsumer(), ref, arg...), calls)
-    append!(callsites, calls)
-
+    calls   = map((arg) -> process_call(  DefaultConsumer(), ref, arg...), calls)
+    
+    callsites = append!(invokes, calls)
+    @show callsites
     sort!(callsites, by=(c)->c.id)
     return callsites
 end
@@ -49,4 +48,25 @@ params = TypedCodeUtils.current_params()
 ref = reflect(h, Tuple{Int}, params=params)
 calls = cthulhu(ref)
 nextrefs = collect(reflect(c) for c in calls if TypedCodeUtils.canreflect(c))
+
+if VERSION >= v"1.1.0-DEV.215" && Base.JLOptions().check_bounds == 0 
+Base.@propagate_inbounds function f(x)
+    @boundscheck error()
+end
+g(x) = @inbounds f(x)
+
+params = TypedCodeUtils.current_params()
+ref = reflect(g, Tuple{Vector{Float64}}, params=params)
+@show ref.CI.code
+calls = cthulhu(ref)
+@test !isempty(calls)
+
+TypedCodeUtils.preprocess!(DefaultConsumer(), ref, true)
+calls = cthulhu(ref)
+@test isempty(calls)
+
+end
+
+
+
 
