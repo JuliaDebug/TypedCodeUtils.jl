@@ -41,13 +41,13 @@ else
     current_params() = Core.Compiler.Params(ccall(:jl_get_world_counter, UInt, ()))
 end
 
-function reflect(F, TT; optimize=true, params=current_params(), kwargs...)
-    sig = Tuple{typeof(F), TT.parameters...}
+function reflect(@nospecialize(F), @nospecialize(TT); optimize=true, params=current_params(), kwargs...)
+    sig = Base.signature_type(F, TT)
     reflect(sig; optimize=true, params=params)
 end
 
 # TODO: deduplicate with callinfo(sig, rt, ref)
-function reflect(sig; optimize=true, params=current_params())
+function reflect(@nospecialize(sig); optimize=true, params=current_params())
     methds = Base._methods_by_ftype(sig, 1, params.world)
     (methds === false || length(methds) < 1) && return nothing
     x = methds[1]
