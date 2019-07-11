@@ -2,19 +2,18 @@ using TypedCodeUtils
 using Test
 
 import TypedCodeUtils: reflect, filter, lookthrough,
-                       DefaultConsumer, Reflection, Callsite,
+                       DefaultConsumer, Reflection,
                        identify_invoke, identify_call,
                        process_invoke, process_call
 
 # Test simple reflection
 f(x, y) = x + y
 
-@test reflect(f, Tuple{Int, Int}) !== nothing
-@test reflect(f, Tuple{Int, Number}) !== nothing # this probably doesn't do the right thing
-                                                 # it will give us **a** method instance. 
+@test !isempty(reflect(f, Tuple{Int, Int}))
+@test !isempty(reflect(f, Tuple{Int, Number}))
 @generated g(x, y) = :(x + y)
-@test reflect(g, Tuple{Int, Int}) !== nothing
-@test reflect(g, Tuple{Int, Number}) === nothing
+@test !isempty(reflect(g, Tuple{Int, Int}))
+@test isempty(reflect(g, Tuple{Int, Number}))
 
 # Cthulhu's inner loop
 function cthulhu(ref::Reflection)
@@ -32,8 +31,9 @@ end
 
 params = TypedCodeUtils.current_params()
 ref = reflect(f, Tuple{Int, Int}, params=params)
-calls = cthulhu(ref)
-nextrefs = collect(reflect(c) for c in calls if TypedCodeUtils.canreflect(c))
+@test length(ref) == 1
+calls = cthulhu(first(ref))
+nextrefs = collect(first(reflect(c)) for c in calls if TypedCodeUtils.canreflect(c[2]))
 
 function h(x)
     if x >= 2
@@ -45,8 +45,9 @@ end
 
 params = TypedCodeUtils.current_params()
 ref = reflect(h, Tuple{Int}, params=params)
-calls = cthulhu(ref)
-nextrefs = collect(reflect(c) for (id, c) in calls if TypedCodeUtils.canreflect(c))
+@test length(ref) == 1
+calls = cthulhu(first(ref))
+nextrefs = collect(first(reflect(c)) for c in calls if TypedCodeUtils.canreflect(c[2]))
 
 if VERSION >= v"1.1.0-DEV.215" && Base.JLOptions().check_bounds == 0 
 Base.@propagate_inbounds function f(x)
@@ -56,6 +57,8 @@ g(x) = @inbounds f(x)
 
 params = TypedCodeUtils.current_params()
 ref = reflect(g, Tuple{Vector{Float64}}, params=params)
+@test length(ref) == 1
+ref = first(ref)
 @show ref.CI.code
 calls = cthulhu(ref)
 @test !isempty(calls)

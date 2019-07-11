@@ -51,7 +51,7 @@ function reflect(@nospecialize(sig); optimize=true, params=current_params())
     methds = Base._methods_by_ftype(sig, -1, params.world)
     (methds === false || length(methds) < 1) && return nothing
     reflections = Reflection[]
-    for x = methds[1]
+    for x in methds
         atypes = x[1]
         sparams = x[2]
         meth = x[3]
