@@ -48,20 +48,24 @@ end
 
 # TODO: deduplicate with callinfo(sig, rt, ref)
 function reflect(@nospecialize(sig); optimize=true, params=current_params())
-    methds = Base._methods_by_ftype(sig, 1, params.world)
+    methds = Base._methods_by_ftype(sig, -1, params.world)
     (methds === false || length(methds) < 1) && return nothing
-    x = methds[1]
-    atypes = x[1]
-    sparams = x[2]
-    meth = x[3]
-    if isdefined(meth, :generator) && !may_invoke_generator(meth, atypes, sparams)
-        return nothing
+    reflections = Reflection[]
+    for x = methds[1]
+        atypes = x[1]
+        sparams = x[2]
+        meth = x[3]
+        if isdefined(meth, :generator) && !may_invoke_generator(meth, atypes, sparams)
+            continue
+        end
+        mi = code_for_method(meth, sig, x[2], params.world)
+        if mi === nothing
+            continue
+        end
+        ref = reflect(mi, optimize=optimize, params=params)
+        push!(reflections, ref)
     end
-    mi = code_for_method(meth, sig, x[2], params.world)
-    if mi === nothing
-        return nothing
-    end
-    reflect(mi, optimize=optimize, params=params)
+    return reflections
 end
 
 function reflect(mi::Core.Compiler.MethodInstance; optimize=true, params=current_params())
