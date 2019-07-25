@@ -13,7 +13,11 @@ f(x, y) = x + y
 @test !isempty(reflect(f, Tuple{Int, Number}))
 @generated g(x, y) = :(x + y)
 @test !isempty(reflect(g, Tuple{Int, Int}))
-@test isempty(reflect(g, Tuple{Int, Number}))
+if VERSION >= v"1.2.0-rc1"
+    @test !isempty(reflect(g, Tuple{Int, Number}))
+else
+    @test isempty(reflect(g, Tuple{Int, Number}))
+end
 
 # Cthulhu's inner loop
 function cthulhu(ref::Reflection)
