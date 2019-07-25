@@ -3,6 +3,7 @@ module TypedCodeUtils
 using Base.Meta
 import Core: Compiler
 using .Compiler: widenconst, argextype
+using Core: MethodInstance
 
 """
     Consumer
@@ -42,22 +43,16 @@ include("reflection.jl")
 # Callsite processing
 ##
 abstract type CallInfo end
-
-struct Callsite
-    id
-    callinfo::CallInfo
-end
-
-canreflect(c::Callsite) = canreflect(c.callinfo)
-reflect(c::Callsite; optimize=true, params=current_params()) = reflect(c.callinfo, optimize=optimize, params=params)
-
 include("process.jl")
+
+##
+# Reflection preprocessing
+##
 include("preprocess.jl")
 
 ##
 # Utils
 ##
-
 filter(f, code) = ((id, c) for (id, c) in enumerate(code) if f(c))
 
 """

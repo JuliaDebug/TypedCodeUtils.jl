@@ -8,6 +8,12 @@ else
     sptypes_from_meth_instance(mi) = Core.Compiler.spvals_from_meth_instance(mi)
 end
 
+if VERSION >= v"1.2.0-DEV.320"
+    const may_invoke_generator = Base.may_invoke_generator
+else
+    may_invoke_generator(meth, @nospecialize(atypes), sparams) = isdispatchtuple(atypes)
+end
+
 if VERSION < v"1.2.0-DEV.573"
     code_for_method(method, metharg, methsp, world, force=false) = Core.Compiler.code_for_method(method, metharg, methsp, world, force)
 else
@@ -35,21 +41,31 @@ else
     current_params() = Core.Compiler.Params(ccall(:jl_get_world_counter, UInt, ()))
 end
 
-function reflect(F, TT; optimize=true, params=current_params())
-    sig = Tuple{typeof(F), TT.parameters...}
+function reflect(@nospecialize(F), @nospecialize(TT); optimize=true, params=current_params(), kwargs...)
+    sig = Base.signature_type(F, TT)
     reflect(sig; optimize=true, params=params)
 end
 
-function reflect(sig; optimize=true, params=current_params())
-    methds = Base._methods_by_ftype(sig, 1, params.world)
+# TODO: deduplicate with callinfo(sig, rt, ref)
+function reflect(@nospecialize(sig); optimize=true, params=current_params())
+    methds = Base._methods_by_ftype(sig, -1, params.world)
     (methds === false || length(methds) < 1) && return nothing
-    x = methds[1]
-    meth = x[3]
-    if isdefined(meth, :generator) && !isdispatchtuple(Tuple{sig.parameters[2:end]...})
-        return nothing
+    reflections = Reflection[]
+    for x in methds
+        atypes = x[1]
+        sparams = x[2]
+        meth = x[3]
+        if isdefined(meth, :generator) && !may_invoke_generator(meth, atypes, sparams)
+            continue
+        end
+        mi = code_for_method(meth, sig, x[2], params.world)
+        if mi === nothing
+            continue
+        end
+        ref = reflect(mi, optimize=optimize, params=params)
+        push!(reflections, ref)
     end
-    mi = code_for_method(meth, sig, x[2], params.world)
-    reflect(mi, optimize=optimize, params=params)
+    return reflections
 end
 
 function reflect(mi::Core.Compiler.MethodInstance; optimize=true, params=current_params())
